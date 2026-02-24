@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-800 text-white rounded-2xl mb-12">
+    <div class="absolute inset-0 opacity-10">
+        <svg class="w-full h-full" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="200" cy="200" r="50" fill="white" class="animate-pulse"/>
+            <circle cx="600" cy="300" r="80" fill="white" class="animate-pulse" style="animation-delay: 1s"/>
+            <circle cx="400" cy="500" r="30" fill="white" class="animate-pulse" style="animation-delay: 2s"/>
+        </svg>
+    </div>
+    
+    <div class="container mx-auto px-8 py-24 relative z-10">
+        <h1 class="text-5xl font-bold mb-6 animate-fade-in" data-aos="fade-up">
+            Tuberculosis Data Analysis Platform
+        </h1>
+        <p class="text-xl mb-8 max-w-2xl opacity-90" data-aos="fade-up" data-aos-delay="200">
+            Comprehensive visualization and analysis of global TB surveillance data from WHO. 
+            Track trends, identify patterns, and make data-driven decisions.
+        </p>
+        <div class="flex space-x-4" data-aos="fade-up" data-aos-delay="400">
+            <a href="{{ url_for('dashboard') }}" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                <i class="fas fa-chart-line mr-2"></i> View Dashboard
+            </a>
+            <a href="{{ url_for('visualizations') }}" class="border-2 border-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-300 hover:scale-105">
+                <i class="fas fa-chart-pie mr-2"></i> Explore Visualizations
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="mb-12">
+    <h2 class="text-3xl font-bold mb-8 text-center" data-aos="fade-up">Global TB Statistics</h2>
+    <div class="grid md:grid-cols-4 gap-6">
+        <div class="stat-card p-6 rounded-lg text-white" data-aos="fade-up" data-aos-delay="0">
+            <div class="flex items-center justify-between mb-4">
+                <i class="fas fa-globe-asia text-4xl"></i>
+                <span class="text-4xl font-bold counter" data-target="215">0</span>
+            </div>
+            <h3 class="text-lg font-semibold">Countries Reporting</h3>
+        </div>
+        
+        <div class="stat-card p-6 rounded-lg text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" data-aos="fade-up" data-aos-delay="100">
+            <div class="flex items-center justify-between mb-4">
+                <i class="fas fa-chart-line text-4xl"></i>
+                <span class="text-4xl font-bold counter" data-target="08">0</span>
+            </div>
+            <h3 class="text-lg font-semibold">Years of Data</h3>
+        </div>
+        
+        <div class="stat-card p-6 rounded-lg text-white" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)" data-aos="fade-up" data-aos-delay="200">
+            <div class="flex items-center justify-between mb-4">
+                <i class="fas fa-vial text-4xl"></i>
+                <span class="text-4xl font-bold counter" data-target="57">0</span>
+            </div>
+            <h3 class="text-lg font-semibold">Data Indicators</h3>
+        </div>
+        
+        <div class="stat-card p-6 rounded-lg text-white" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%)" data-aos="fade-up" data-aos-delay="300">
+            <div class="flex items-center justify-between mb-4">
+                <i class="fas fa-chart-bar text-4xl"></i>
+                <span class="text-4xl font-bold counter" data-target="1720">0</span>
+            </div>
+            <h3 class="text-lg font-semibold">Total Records</h3>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="mb-12">
+    <h2 class="text-3xl font-bold mb-8 text-center" data-aos="fade-up">Key Features</h2>
+    <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-white rounded-lg p-8 shadow-lg hover-scale fade-in" data-aos="fade-up" data-aos-delay="0">
+            <div class="text-blue-600 text-5xl mb-4">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">Interactive Charts</h3>
+            <p class="text-gray-600">Explore TB data through interactive and responsive visualizations with zoom, pan, and hover features.</p>
+        </div>
+        
+        <div class="bg-white rounded-lg p-8 shadow-lg hover-scale fade-in" data-aos="fade-up" data-aos-delay="200">
+            <div class="text-purple-600 text-5xl mb-4">
+                <i class="fas fa-filter"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">Advanced Filtering</h3>
+            <p class="text-gray-600">Filter and analyze data by region, year, and various TB indicators for targeted insights.</p>
+        </div>
+        
+        <div class="bg-white rounded-lg p-8 shadow-lg hover-scale fade-in" data-aos="fade-up" data-aos-delay="400">
+            <div class="text-green-600 text-5xl mb-4">
+                <i class="fas fa-download"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">Export Capabilities</h3>
+            <p class="text-gray-600">Download charts as PNG or SVG, and export raw data for further analysis.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Data Preview Section -->
+<section class="mb-12">
+    <h2 class="text-3xl font-bold mb-8 text-center" data-aos="fade-up">Data Preview</h2>
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden" data-aos="fade-up">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200" id="preview-table">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TB Cases</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MDR Cases</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">XDR Cases</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="table-body">
+                    <!-- Data will be loaded via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <p class="text-sm text-gray-600">
+                <i class="fas fa-info-circle mr-1"></i> 
+                Showing 20 of <span id="total-records">0</span> total records
+            </p>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Load preview data on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadPreviewData();
+        animateCounters();
+    });
+    
+    function loadPreviewData() {
+        fetch('/data/preview')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const tbody = document.getElementById('table-body');
+                    tbody.innerHTML = '';
+                    
+                    data.preview.forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-gray-50 transition';
+                        tr.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap">${row.country || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${row.year || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${row.pulm_labconf_new ? formatNumber(row.pulm_labconf_new) : 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${row.mdr_new ? formatNumber(row.mdr_new) : 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${row.xdr ? formatNumber(row.xdr) : 'N/A'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    
+                    document.getElementById('total-records').textContent = data.info.shape[0];
+                }
+            });
+    }
+    
+    function animateCounters() {
+        const counters = document.querySelectorAll('.counter');
+        counters.forEach(counter => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            const increment = target / 50;
+            let current = 0;
+            
+            const updateCounter = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    counter.textContent = target;
+                    clearInterval(updateCounter);
+                } else {
+                    counter.textContent = Math.round(current);
+                }
+            }, 20);
+        });
+    }
+</script>
+{% endblock %}

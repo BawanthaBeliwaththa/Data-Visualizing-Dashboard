@@ -1,0 +1,853 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="flex justify-between items-center mb-8" data-aos="fade-up">
+    <h1 class="text-3xl font-bold">TB Data Analysis Dashboard</h1>
+    <div class="flex space-x-4">
+        <button onclick="exportCSV()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-all duration-300 hover:scale-105">
+            <i class="fas fa-file-csv mr-2"></i> Export CSV
+        </button>
+        <button onclick="exportReport()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-300 hover:scale-105">
+            <i class="fas fa-download mr-2"></i> Export Report
+        </button>
+        <button onclick="refreshData()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-300 hover:scale-105">
+            <i class="fas fa-sync-alt mr-2"></i> Refresh Data
+        </button>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="grid md:grid-cols-4 gap-6 mb-8">
+    <div class="stat-card p-6 rounded-lg text-white" data-aos="fade-up" data-aos-delay="0">
+        <div class="flex items-center justify-between mb-4">
+            <i class="fas fa-lungs text-4xl"></i>
+            <span class="text-4xl font-bold counter" data-target="{{ stats['pulm_labconf_new']['total']|round|int }}">0</span>
+        </div>
+        <h3 class="text-lg font-semibold">Total TB Cases</h3>
+        <p class="text-sm opacity-90">Mean: {{ stats['pulm_labconf_new']['mean']|round|int }} per year</p>
+    </div>
+    
+    <div class="stat-card p-6 rounded-lg text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" data-aos="fade-up" data-aos-delay="100">
+        <div class="flex items-center justify-between mb-4">
+            <i class="fas fa-vial text-4xl"></i>
+            <span class="text-4xl font-bold counter" data-target="{{ stats.get('mdr_new', {}).get('total', 0)|round|int }}">0</span>
+        </div>
+        <h3 class="text-lg font-semibold">Total MDR-TB Cases</h3>
+        <p class="text-sm opacity-90">Growth: {{ trends.get('mdr_new', {}).get('growth_rate', 0)|round(1) }}%</p>
+    </div>
+    
+    <div class="stat-card p-6 rounded-lg text-white" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)" data-aos="fade-up" data-aos-delay="200">
+        <div class="flex items-center justify-between mb-4">
+            <i class="fas fa-flask text-4xl"></i>
+            <span class="text-4xl font-bold counter" data-target="{{ stats.get('xdr', {}).get('total', 0)|round|int }}">0</span>
+        </div>
+        <h3 class="text-lg font-semibold">Total XDR-TB Cases</h3>
+        <p class="text-sm opacity-90">Highest: {{ stats.get('xdr', {}).get('max', 0)|round|int }}</p>
+    </div>
+    
+    <div class="stat-card p-6 rounded-lg text-white" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%)" data-aos="fade-up" data-aos-delay="300">
+        <div class="flex items-center justify-between mb-4">
+            <i class="fas fa-calendar-alt text-4xl"></i>
+            <span class="text-4xl font-bold">{{ trends.get('pulm_labconf_new', {}).get('years', [])|length }}</span>
+        </div>
+        <h3 class="text-lg font-semibold">Years Analyzed</h3>
+        <p class="text-sm opacity-90">Range: {{ trends.get('pulm_labconf_new', {}).get('years', [])|min }}-{{ trends.get('pulm_labconf_new', {}).get('years', [])|max }}</p>
+    </div>
+</div>
+
+<!-- Charts Row 1 - Line and Bar Charts -->
+<div class="grid md:grid-cols-2 gap-8 mb-8">
+    <!-- Line Chart -->
+    <div class="bg-white rounded-lg shadow-lg p-6" data-aos="fade-right">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">TB Cases Over Years</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('line-chart', 'TB Cases Over Years')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('line', 'line-chart')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button onclick="refreshChart('line-chart', 'line')" class="text-gray-600 hover:text-gray-800 transition" title="Refresh Chart">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container" id="line-chart-container">
+            <div id="line-chart"></div>
+        </div>
+    </div>
+    
+    <!-- Bar Chart -->
+    <div class="bg-white rounded-lg shadow-lg p-6" data-aos="fade-left">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Top Countries by TB Cases</h2>
+            <div class="flex items-center space-x-2">
+                <select id="top-n-select" class="border rounded px-2 py-1 text-sm" onchange="updateTopCountries()">
+                    <option value="5">Top 5</option>
+                    <option value="10" selected>Top 10</option>
+                    <option value="15">Top 15</option>
+                    <option value="20">Top 20</option>
+                </select>
+                <button onclick="fullscreenChart('bar-chart', 'Top Countries by TB Cases')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('bar', 'bar-chart')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button onclick="refreshChart('bar-chart', 'bar', {top_n: document.getElementById('top-n-select').value})" class="text-gray-600 hover:text-gray-800 transition" title="Refresh Chart">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container" id="bar-chart-container">
+            <div id="bar-chart"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2 - Pie and Correlation -->
+<div class="grid md:grid-cols-2 gap-8 mb-8">
+    <!-- Pie Chart -->
+    <div class="bg-white rounded-lg shadow-lg p-6" data-aos="fade-right" data-aos-delay="200">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Regional Distribution</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('pie-chart', 'Regional Distribution')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('pie', 'pie-chart')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button onclick="refreshChart('pie-chart', 'pie')" class="text-gray-600 hover:text-gray-800 transition" title="Refresh Chart">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container" id="pie-chart-container">
+            <div id="pie-chart"></div>
+        </div>
+    </div>
+    
+    <!-- Correlation Matrix -->
+    <div class="bg-white rounded-lg shadow-lg p-6" data-aos="fade-left" data-aos-delay="200">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Correlation Matrix</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('correlation-chart', 'Correlation Matrix')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('correlation', 'correlation-chart')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button onclick="refreshChart('correlation-chart', 'correlation')" class="text-gray-600 hover:text-gray-800 transition" title="Refresh Chart">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container" id="correlation-chart-container">
+            <div id="correlation-chart"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 3 - Scatter and Boxplot -->
+<div class="grid md:grid-cols-2 gap-8 mb-8">
+    <!-- Scatter Plot -->
+    <div class="bg-white rounded-lg shadow-lg p-6" data-aos="fade-right" data-aos-delay="400">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">TB vs MDR-TB Cases</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('scatter-chart', 'TB vs MDR-TB Cases')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('scatter', 'scatter-chart')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button onclick="refreshChart('scatter-chart', 'scatter')" class="text-gray-600 hover:text-gray-800 transition" title="Refresh Chart">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container" id="scatter-chart-container">
+            <div id="scatter-chart"></div>
+        </div>
+    </div>
+    
+    <!-- Boxplot -->
+    <div class="bg-white rounded-lg shadow-lg p-6" data-aos="fade-left" data-aos-delay="400">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">TB Cases Distribution</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('boxplot-chart', 'TB Cases Distribution')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('boxplot', 'boxplot-chart')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button onclick="refreshChart('boxplot-chart', 'boxplot')" class="text-gray-600 hover:text-gray-800 transition" title="Refresh Chart">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container" id="boxplot-chart-container">
+            <div id="boxplot-chart"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 4 - Region Boxplot and MDR Trend -->
+<div class="grid md:grid-cols-2 gap-8 mb-8">
+    <!-- Region Boxplot -->
+    <div class="bg-white rounded-lg shadow-lg p-6" data-aos="fade-right" data-aos-delay="600">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Distribution by Region</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('region-boxplot', 'Distribution by Region')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('region-boxplot', 'region-boxplot')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button onclick="refreshChart('region-boxplot', 'region_boxplot')" class="text-gray-600 hover:text-gray-800 transition" title="Refresh Chart">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container" id="region-boxplot-container">
+            <div id="region-boxplot"></div>
+        </div>
+    </div>
+    
+    <!-- MDR Trend -->
+    <div class="bg-white rounded-lg shadow-lg p-6" data-aos="fade-left" data-aos-delay="600">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">MDR-TB Cases Over Years</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('mdr-chart', 'MDR-TB Cases Over Years')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('mdr', 'mdr-chart')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button onclick="refreshMDRChart()" class="text-gray-600 hover:text-gray-800 transition" title="Refresh Chart">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container" id="mdr-chart-container">
+            <div id="mdr-chart"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Countries Table -->
+<div class="bg-white rounded-lg shadow-lg p-6 mb-8" data-aos="fade-up">
+    <h2 class="text-xl font-bold mb-4">Top 10 Countries by TB Cases</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Cases</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% of Total</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for country in top_countries %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 whitespace-nowrap">{{ loop.index }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-medium">{{ country.country }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ "{:,.0f}".format(country.pulm_labconf_new|round|int) }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ (country.pulm_labconf_new / stats['pulm_labconf_new']['total'] * 100)|round(1) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Data Preview Section -->
+<div class="bg-white rounded-lg shadow-lg p-6" data-aos="fade-up">
+    <h2 class="text-xl font-bold mb-4">Data Preview</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TB Cases</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MDR Cases</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">XDR Cases</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200" id="preview-table-body">
+                <!-- Data will be loaded via JavaScript -->
+            </tbody>
+        </table>
+    </div>
+    <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 mt-4 rounded-lg">
+        <p class="text-sm text-gray-600">
+            <i class="fas fa-info-circle mr-1"></i> 
+            Showing 10 of <span id="total-records">0</span> total records from <span id="total-countries">0</span> countries
+        </p>
+    </div>
+</div>
+
+<!-- Fullscreen Modal -->
+<div id="fullscreen-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden z-50">
+    <div class="fullscreen-controls">
+        <button onclick="downloadFullscreenChart()" class="bg-white text-green-600 hover:bg-gray-100" title="Download PNG">
+            <i class="fas fa-download"></i> Download
+        </button>
+        <button onclick="closeFullscreen()" class="bg-white text-red-600 hover:bg-gray-100" title="Close">
+            <i class="fas fa-times"></i> Close
+        </button>
+    </div>
+    <div class="chart-info-overlay" id="fullscreen-chart-title">
+        <h3 class="font-bold"></h3>
+    </div>
+    <div class="w-full h-full flex items-center justify-center p-8">
+        <div id="fullscreen-chart" class="w-full h-full"></div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAllCharts();
+        animateCounters();
+        loadDataPreview();
+        
+        // Handle escape key to close fullscreen
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeFullscreen();
+            }
+        });
+        
+        // Monitor for any chart unfitting issues
+        setInterval(checkChartFitting, 2000);
+    });
+    
+    let currentFullscreenChart = null;
+    let currentFullscreenTitle = '';
+    let chartInstances = {};
+    
+    function checkChartFitting() {
+        // Check all chart containers and force resize if needed
+        const chartIds = ['line-chart', 'bar-chart', 'pie-chart', 'correlation-chart', 
+                         'scatter-chart', 'boxplot-chart', 'mdr-chart', 'region-boxplot'];
+        
+        chartIds.forEach(chartId => {
+            const element = document.getElementById(chartId);
+            if (element && element._fullLayout) {
+                // Check if chart is properly sized
+                const container = element.closest('.chart-container');
+                if (container) {
+                    const containerHeight = container.clientHeight;
+                    const chartHeight = element._fullLayout.height;
+                    
+                    // If chart height doesn't match container, resize
+                    if (Math.abs(chartHeight - containerHeight) > 10) {
+                        Plotly.Plots.resize(chartId);
+                    }
+                }
+            }
+        });
+    }
+    
+    function loadAllCharts() {
+        // Load line chart
+        loadChart('line', 'line-chart');
+        
+        // Load bar chart
+        loadChart('bar', 'bar-chart', {top_n: 10});
+        
+        // Load pie chart
+        loadChart('pie', 'pie-chart');
+        
+        // Load correlation matrix
+        loadChart('correlation', 'correlation-chart');
+        
+        // Load scatter plot
+        loadChart('scatter', 'scatter-chart');
+        
+        // Load boxplot
+        loadChart('boxplot', 'boxplot-chart');
+        
+        // Load region boxplot
+        loadChart('region_boxplot', 'region-boxplot');
+        
+        // Load MDR trend
+        loadMDRTrend();
+    }
+    
+    function loadChart(chartType, elementId, params = {}) {
+        showLoading(elementId);
+        
+        let url = `/api/visualization/${chartType}`;
+        if (params.top_n) {
+            url += `?top_n=${params.top_n}`;
+        }
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const chartData = JSON.parse(data.chart);
+                    
+                    // Get container dimensions
+                    const container = document.getElementById(`${elementId}-container`) || 
+                                    document.getElementById(elementId).parentElement;
+                    const containerWidth = container.clientWidth;
+                    const containerHeight = container.clientHeight;
+                    
+                    // Optimize layout for perfect fitting
+                    chartData.layout.autosize = true;
+                    chartData.layout.width = containerWidth;
+                    chartData.layout.height = containerHeight;
+                    chartData.layout.margin = { 
+                        l: chartType === 'correlation' ? 100 : 50, 
+                        r: 50, 
+                        t: 50, 
+                        b: chartType === 'correlation' ? 100 : 50 
+                    };
+                    
+                    // Remove any conflicting properties
+                    delete chartData.layout.template;
+                    
+                    // Specific adjustments for different chart types
+                    if (chartType === 'pie') {
+                        chartData.layout.margin = { l: 0, r: 0, t: 40, b: 0 };
+                    }
+                    
+                    if (chartType === 'correlation') {
+                        chartData.layout.margin = { l: 120, r: 50, t: 50, b: 120 };
+                    }
+                    
+                    Plotly.newPlot(elementId, chartData.data, chartData.layout, {
+                        responsive: true,
+                        displayModeBar: true,
+                        displaylogo: false,
+                        modeBarButtonsToRemove: ['lasso2d', 'select2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d']
+                    }).then(plot => {
+                        chartInstances[elementId] = plot;
+                        
+                        // Add resize observer to handle container size changes
+                        const resizeObserver = new ResizeObserver(entries => {
+                            for (let entry of entries) {
+                                const { width, height } = entry.contentRect;
+                                Plotly.relayout(elementId, {
+                                    width: width,
+                                    height: height
+                                });
+                            }
+                        });
+                        
+                        resizeObserver.observe(container);
+                    });
+                } else {
+                    showError(elementId, 'Failed to load chart');
+                }
+            })
+            .catch(error => {
+                console.error(`Error loading ${chartType} chart:`, error);
+                showError(elementId, 'Error loading chart');
+            });
+    }
+    
+    function refreshChart(elementId, chartType, params = {}) {
+        if (chartInstances[elementId]) {
+            Plotly.purge(elementId);
+            delete chartInstances[elementId];
+        }
+        loadChart(chartType, elementId, params);
+    }
+    
+    function loadMDRTrend() {
+        const elementId = 'mdr-chart';
+        showLoading(elementId);
+        
+        fetch('/api/analysis/mdr_trend')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data && data.data.years && data.data.years.length > 0) {
+                    const trace = {
+                        x: data.data.years,
+                        y: data.data.values,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: {color: '#FF6B6B', width: 3},
+                        marker: {size: 10, color: '#4ECDC4', line: {color: 'white', width: 2}},
+                        text: data.data.values.map(v => formatNumber(v)),
+                        textposition: 'top center'
+                    };
+                    
+                    // Get container dimensions
+                    const container = document.getElementById(`${elementId}-container`);
+                    const containerWidth = container.clientWidth;
+                    const containerHeight = container.clientHeight;
+                    
+                    const layout = {
+                        title: 'MDR-TB Cases Over Years',
+                        xaxis: {title: 'Year', tickmode: 'array', tickvals: data.data.years, gridcolor: 'lightgray'},
+                        yaxis: {title: 'Number of Cases', gridcolor: 'lightgray'},
+                        hovermode: 'x unified',
+                        autosize: true,
+                        width: containerWidth,
+                        height: containerHeight,
+                        margin: {l: 50, r: 50, t: 50, b: 50},
+                        showlegend: false
+                    };
+                    
+                    Plotly.newPlot(elementId, [trace], layout, {
+                        responsive: true,
+                        displayModeBar: true,
+                        displaylogo: false
+                    }).then(plot => {
+                        chartInstances[elementId] = plot;
+                        
+                        const resizeObserver = new ResizeObserver(entries => {
+                            for (let entry of entries) {
+                                const { width, height } = entry.contentRect;
+                                Plotly.relayout(elementId, {
+                                    width: width,
+                                    height: height
+                                });
+                            }
+                        });
+                        
+                        resizeObserver.observe(container);
+                    });
+                } else {
+                    showError(elementId, 'No MDR-TB data available');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading MDR trend:', error);
+                showError(elementId, 'Error loading MDR trend');
+            });
+    }
+    
+    function refreshMDRChart() {
+        if (chartInstances['mdr-chart']) {
+            Plotly.purge('mdr-chart');
+            delete chartInstances['mdr-chart'];
+        }
+        loadMDRTrend();
+    }
+    
+    function loadDataPreview() {
+        fetch('/data/preview')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const tbody = document.getElementById('preview-table-body');
+                    if (tbody) {
+                        tbody.innerHTML = '';
+                        data.preview.slice(0, 10).forEach(row => {
+                            const tr = document.createElement('tr');
+                            tr.className = 'hover:bg-gray-50 transition';
+                            tr.innerHTML = `
+                                <td class="px-6 py-4 whitespace-nowrap">${row.country || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${row.year || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${row.pulm_labconf_new ? formatNumber(row.pulm_labconf_new) : 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${row.mdr_new ? formatNumber(row.mdr_new) : 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${row.xdr ? formatNumber(row.xdr) : 'N/A'}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                    
+                    const info = data.info;
+                    document.getElementById('total-countries').textContent = info.unique_countries || 'N/A';
+                    document.getElementById('total-records').textContent = info.shape ? info.shape[0].toLocaleString() : 'N/A';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading data preview:', error);
+            });
+    }
+    
+    function updateTopCountries() {
+        const topN = document.getElementById('top-n-select').value;
+        refreshChart('bar-chart', 'bar', {top_n: topN});
+    }
+    
+    function fullscreenChart(chartId, title) {
+        const element = document.getElementById(chartId);
+        if (!element || !element.data) {
+            showNotification('Chart not ready yet', 'warning');
+            return;
+        }
+        
+        currentFullscreenChart = chartId;
+        currentFullscreenTitle = title;
+        
+        // Store the original chart data
+        const chartData = {
+            data: element.data,
+            layout: JSON.parse(JSON.stringify(element.layout))
+        };
+        
+        // Optimize layout for fullscreen
+        chartData.layout.width = window.innerWidth * 0.9;
+        chartData.layout.height = window.innerHeight * 0.8;
+        chartData.layout.margin = { l: 80, r: 80, t: 80, b: 80 };
+        
+        // Update title overlay
+        document.querySelector('#fullscreen-chart-title h3').textContent = title;
+        
+        // Show modal and plot
+        document.getElementById('fullscreen-modal').classList.remove('hidden');
+        
+        Plotly.newPlot('fullscreen-chart', chartData.data, chartData.layout, {
+            responsive: true,
+            displayModeBar: true,
+            displaylogo: false,
+            modeBarButtonsToAdd: ['toImage']
+        });
+        
+        // Prevent body scrolling
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeFullscreen() {
+        document.getElementById('fullscreen-modal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        
+        // Clean up fullscreen chart
+        Plotly.purge('fullscreen-chart');
+        currentFullscreenChart = null;
+    }
+    
+    function downloadFullscreenChart() {
+        if (currentFullscreenChart) {
+            Plotly.downloadImage('fullscreen-chart', {
+                format: 'png',
+                width: 1920,
+                height: 1080,
+                filename: `tb_${currentFullscreenTitle.toLowerCase().replace(/\s+/g, '_')}_fullscreen`
+            });
+        }
+    }
+    
+    function downloadChart(type, elementId) {
+        Plotly.downloadImage(elementId, {
+            format: 'png',
+            width: 1200,
+            height: 800,
+            filename: `tb_${type}_chart_${new Date().toISOString().slice(0,10)}`
+        });
+    }
+    
+    function exportReport() {
+        window.location.href = '/api/export/report';
+    }
+    
+    function exportCSV() {
+        window.location.href = '/api/export/csv';
+    }
+    
+    function refreshData() {
+        fetch('/api/refresh-data')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Data refreshed successfully!', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showNotification('Error refreshing data', 'error');
+                }
+            });
+    }
+    
+    function showLoading(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+                <div class="flex flex-col justify-center items-center h-full min-h-[400px]">
+                    <div class="loader mb-4"></div>
+                    <p class="text-gray-500">Loading chart...</p>
+                </div>
+            `;
+        }
+    }
+    
+    function showError(elementId, message) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+                <div class="flex flex-col justify-center items-center h-full min-h-[400px]">
+                    <div class="text-red-500 text-center">
+                        <i class="fas fa-exclamation-circle text-5xl mb-4"></i>
+                        <p class="text-lg font-semibold">${message}</p>
+                        <p class="text-sm text-gray-500 mt-2">Please try refreshing the page</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-20 right-4 p-4 rounded-lg shadow-lg z-50 animate-slideIn ${
+            type === 'success' ? 'bg-green-500' : type === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+        } text-white`;
+        notification.innerHTML = message;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+    
+    function formatNumber(num) {
+        if (num === null || num === undefined) return 'N/A';
+        if (typeof num === 'number') {
+            return num.toLocaleString();
+        }
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    
+    function animateCounters() {
+        const counters = document.querySelectorAll('.counter');
+        counters.forEach(counter => {
+            const targetText = counter.getAttribute('data-target');
+            const target = parseInt(targetText.replace(/,/g, ''));
+            if (isNaN(target)) return;
+            
+            const increment = Math.max(1, Math.floor(target / 50));
+            let current = 0;
+            
+            const updateCounter = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    counter.textContent = target.toLocaleString();
+                    clearInterval(updateCounter);
+                } else {
+                    counter.textContent = current.toLocaleString();
+                }
+            }, 20);
+        });
+    }
+    
+    // Enhanced window resize handler
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            const charts = ['line-chart', 'bar-chart', 'pie-chart', 'correlation-chart', 
+                          'scatter-chart', 'boxplot-chart', 'mdr-chart', 'region-boxplot'];
+            charts.forEach(chartId => {
+                const element = document.getElementById(chartId);
+                if (element && element._fullLayout) {
+                    const container = document.getElementById(`${chartId}-container`);
+                    if (container) {
+                        Plotly.relayout(chartId, {
+                            width: container.clientWidth,
+                            height: container.clientHeight
+                        });
+                    }
+                }
+            });
+            
+            // Resize fullscreen chart if open
+            if (currentFullscreenChart) {
+                const fullscreenElement = document.getElementById('fullscreen-chart');
+                if (fullscreenElement && fullscreenElement._fullLayout) {
+                    Plotly.relayout('fullscreen-chart', {
+                        width: window.innerWidth * 0.9,
+                        height: window.innerHeight * 0.8
+                    });
+                }
+            }
+        }, 250);
+    });
+</script>
+
+<style>
+    .stat-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+    .chart-container {
+        position: relative;
+        width: 100%;
+        min-height: 400px;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    #correlation-chart {
+        min-height: 450px;
+    }
+    .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Fullscreen modal enhancements */
+    #fullscreen-modal {
+        backdrop-filter: blur(5px);
+        transition: all 0.3s ease;
+    }
+    
+    .fullscreen-controls {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        display: flex;
+        gap: 10px;
+    }
+    
+    .fullscreen-controls button {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(5px);
+        border: none;
+        border-radius: 8px;
+        padding: 12px 20px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .fullscreen-controls button:hover {
+        background: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+    
+    .chart-info-overlay {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(5px);
+        padding: 12px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        z-index: 10000;
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+    }
+</style>
+{% endblock %}

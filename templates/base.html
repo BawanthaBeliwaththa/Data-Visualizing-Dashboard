@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TB Data Analysis - {% block title %}Dashboard{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    
+    <!-- AOS Animation -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-lungs text-2xl animate-pulse"></i>
+                    <span class="text-xl font-bold">TB Data Analysis Platform</span>
+                </div>
+                
+                <div class="hidden md:flex space-x-8">
+                    <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+                        <i class="fas fa-home mr-1"></i> Home
+                    </a>
+                    <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                        <i class="fas fa-chart-line mr-1"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('visualizations') }}" class="nav-link {% if request.endpoint == 'visualizations' %}active{% endif %}">
+                        <i class="fas fa-chart-pie mr-1"></i> Visualizations
+                    </a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button onclick="refreshData()" class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition-all duration-300 hover:scale-105">
+                        <i class="fas fa-sync-alt mr-1"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-12">
+        <div class="container mx-auto px-6 py-8">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">About</h3>
+                    <p class="text-gray-300">TB Data Analysis Platform provides comprehensive visualization and analysis of tuberculosis surveillance data from WHO.</p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-300 hover:text-white transition"><i class="fas fa-chevron-right mr-2"></i> Documentation</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-white transition"><i class="fas fa-chevron-right mr-2"></i> API</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-white transition"><i class="fas fa-chevron-right mr-2"></i> About Us</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Contact</h3>
+                    <p class="text-gray-300"><i class="fas fa-envelope mr-2"></i> support@starlight-coders.site</p>
+                    <p class="text-gray-300"><i class="fas fa-phone mr-2"></i> +94 (71) 2574304</p>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-4 text-center">
+                <p class="text-gray-400">&copy; 2026 TB Data Analysis Platform. By Starlight Coders.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 800,
+            once: true
+        });
+        
+        // Refresh data function
+        function refreshData() {
+            fetch('/api/refresh-data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Data refreshed successfully!', 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showNotification('Error refreshing data', 'error');
+                    }
+                });
+        }
+        
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-4 p-4 rounded-lg shadow-lg z-50 animate-slideIn ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            } text-white`;
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+        
+        // Handle window resize for charts
+        window.addEventListener('resize', function() {
+            const charts = ['line-chart', 'bar-chart', 'pie-chart', 'correlation-chart', 
+                          'scatter-chart', 'boxplot-chart', 'mdr-chart', 'region-boxplot'];
+            charts.forEach(chartId => {
+                const element = document.getElementById(chartId);
+                if (element && element.layout) {
+                    Plotly.Plots.resize(chartId);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
