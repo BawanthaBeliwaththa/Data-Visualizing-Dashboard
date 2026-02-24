@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}Visualizations{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold mb-4" data-aos="fade-up">Data Visualizations</h1>
+    <p class="text-gray-600" data-aos="fade-up" data-aos-delay="100">
+        Explore interactive visualizations of global TB data. Click on any chart to view in full screen.
+    </p>
+</div>
+
+<!-- Visualization Grid -->
+<div class="grid md:grid-cols-2 gap-8">
+    <!-- Line Chart -->
+    <div class="bg-white rounded-lg shadow-lg p-6 hover-scale" data-aos="fade-right" data-aos-delay="0">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">TB Cases Over Years</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('line-chart', 'TB Cases Over Years')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('line', 'line-chart')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container">
+            <div id="line-chart"></div>
+        </div>
+    </div>
+    
+    <!-- Bar Chart -->
+    <div class="bg-white rounded-lg shadow-lg p-6 hover-scale" data-aos="fade-left" data-aos-delay="100">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Top Countries by TB Cases</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('bar-chart', 'Top Countries by TB Cases')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('bar', 'bar-chart')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container">
+            <div id="bar-chart"></div>
+        </div>
+    </div>
+    
+    <!-- Pie Chart -->
+    <div class="bg-white rounded-lg shadow-lg p-6 hover-scale" data-aos="fade-right" data-aos-delay="200">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Regional Distribution</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('pie-chart', 'Regional Distribution')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('pie', 'pie-chart')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container">
+            <div id="pie-chart"></div>
+        </div>
+    </div>
+    
+    <!-- Correlation Matrix -->
+    <div class="bg-white rounded-lg shadow-lg p-6 hover-scale" data-aos="fade-left" data-aos-delay="300">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Correlation Matrix</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('correlation-chart', 'Correlation Matrix')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('correlation', 'correlation-chart')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container">
+            <div id="correlation-chart"></div>
+        </div>
+    </div>
+    
+    <!-- Scatter Plot -->
+    <div class="bg-white rounded-lg shadow-lg p-6 hover-scale" data-aos="fade-right" data-aos-delay="400">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">TB vs MDR-TB Cases</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('scatter-chart', 'TB vs MDR-TB Cases')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('scatter', 'scatter-chart')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container">
+            <div id="scatter-chart"></div>
+        </div>
+    </div>
+    
+    <!-- Region Boxplot -->
+    <div class="bg-white rounded-lg shadow-lg p-6 hover-scale" data-aos="fade-left" data-aos-delay="500">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Distribution by Region</h2>
+            <div class="flex space-x-2">
+                <button onclick="fullscreenChart('region-boxplot', 'Distribution by Region')" class="text-blue-600 hover:text-blue-800 transition" title="Full Screen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button onclick="downloadChart('region-boxplot', 'region-boxplot')" class="text-green-600 hover:text-green-800 transition" title="Download PNG">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chart-container">
+            <div id="region-boxplot"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Modal (Reusing the same modal structure) -->
+<div id="fullscreen-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden z-50">
+    <div class="fullscreen-controls">
+        <button onclick="downloadFullscreenChart()" class="bg-white text-green-600 hover:bg-gray-100" title="Download PNG">
+            <i class="fas fa-download"></i> Download
+        </button>
+        <button onclick="closeFullscreen()" class="bg-white text-red-600 hover:bg-gray-100" title="Close">
+            <i class="fas fa-times"></i> Close
+        </button>
+    </div>
+    <div class="chart-info-overlay" id="fullscreen-chart-title">
+        <h3 class="font-bold"></h3>
+    </div>
+    <div class="w-full h-full flex items-center justify-center p-8">
+        <div id="fullscreen-chart" class="w-full h-full"></div>
+    </div>
+</div>
+
+<script>
+    let currentFullscreenChart = null;
+    let currentFullscreenTitle = '';
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAllCharts();
+        
+        // Handle escape key to close fullscreen
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeFullscreen();
+            }
+        });
+    });
+    
+    function loadAllCharts() {
+        const charts = ['line', 'bar', 'pie', 'correlation', 'scatter', 'region_boxplot'];
+        charts.forEach(chart => {
+            const elementId = chart === 'region_boxplot' ? 'region-boxplot' : `${chart}-chart`;
+            showLoading(elementId);
+            
+            fetch(`/api/visualization/${chart}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const chartData = JSON.parse(data.chart);
+                        
+                        // Optimize layout for fitting
+                        chartData.layout.autosize = true;
+                        chartData.layout.width = null;
+                        chartData.layout.height = null;
+                        chartData.layout.margin = { l: 50, r: 50, t: 50, b: 50 };
+                        
+                        // Specific adjustments
+                        if (chart === 'correlation') {
+                            chartData.layout.height = 450;
+                            chartData.layout.margin = { l: 100, r: 50, t: 50, b: 100 };
+                        }
+                        if (chart === 'pie') {
+                            chartData.layout.margin = { l: 0, r: 0, t: 40, b: 0 };
+                        }
+                        
+                        Plotly.newPlot(elementId, chartData.data, chartData.layout, {
+                            responsive: true,
+                            displayModeBar: true,
+                            displaylogo: false,
+                            modeBarButtonsToRemove: ['lasso2d', 'select2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d']
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error loading ${chart} chart:`, error);
+                    showError(elementId, 'Error loading chart');
+                });
+        });
+    }
+    
+    function fullscreenChart(chartId, title) {
+        const element = document.getElementById(chartId);
+        if (!element || !element.data) {
+            showNotification('Chart not ready yet', 'warning');
+            return;
+        }
+        
+        currentFullscreenChart = chartId;
+        currentFullscreenTitle = title;
+        
+        // Store the original chart data
+        const chartData = {
+            data: element.data,
+            layout: JSON.parse(JSON.stringify(element.layout))
+        };
+        
+        // Optimize layout for fullscreen
+        chartData.layout.width = window.innerWidth * 0.9;
+        chartData.layout.height = window.innerHeight * 0.8;
+        chartData.layout.margin = { l: 80, r: 80, t: 80, b: 80 };
+        
+        // Update title overlay
+        document.querySelector('#fullscreen-chart-title h3').textContent = title;
+        
+        // Show modal and plot
+        document.getElementById('fullscreen-modal').classList.remove('hidden');
+        
+        Plotly.newPlot('fullscreen-chart', chartData.data, chartData.layout, {
+            responsive: true,
+            displayModeBar: true,
+            displaylogo: false,
+            modeBarButtonsToAdd: ['toImage']
+        });
+        
+        // Prevent body scrolling
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeFullscreen() {
+        document.getElementById('fullscreen-modal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        
+        // Clean up fullscreen chart
+        Plotly.purge('fullscreen-chart');
+        currentFullscreenChart = null;
+    }
+    
+    function downloadFullscreenChart() {
+        if (currentFullscreenChart) {
+            Plotly.downloadImage('fullscreen-chart', {
+                format: 'png',
+                width: 1920,
+                height: 1080,
+                filename: `tb_${currentFullscreenTitle.toLowerCase().replace(/\s+/g, '_')}_fullscreen`
+            });
+        }
+    }
+    
+    function downloadChart(type, elementId) {
+        Plotly.downloadImage(elementId, {
+            format: 'png',
+            width: 1200,
+            height: 800,
+            filename: `tb_${type}_chart`
+        });
+    }
+    
+    function showLoading(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+                <div class="flex justify-center items-center h-full min-h-[400px]">
+                    <div class="loader"></div>
+                </div>
+            `;
+        }
+    }
+    
+    function showError(elementId, message) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+                <div class="flex flex-col justify-center items-center h-full min-h-[400px]">
+                    <div class="text-red-500 text-center">
+                        <i class="fas fa-exclamation-circle text-5xl mb-4"></i>
+                        <p class="text-lg font-semibold">${message}</p>
+                        <p class="text-sm text-gray-500 mt-2">Please try refreshing the page</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-20 right-4 p-4 rounded-lg shadow-lg z-50 animate-slideIn ${
+            type === 'success' ? 'bg-green-500' : type === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+        } text-white`;
+        notification.innerHTML = message;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+    
+    // Handle window resize for charts
+    window.addEventListener('resize', function() {
+        const charts = ['line-chart', 'bar-chart', 'pie-chart', 'correlation-chart', 
+                      'scatter-chart', 'region-boxplot'];
+        charts.forEach(chartId => {
+            const element = document.getElementById(chartId);
+            if (element && element.data) {
+                Plotly.Plots.resize(chartId);
+            }
+        });
+        
+        // Resize fullscreen chart if open
+        if (currentFullscreenChart) {
+            const fullscreenElement = document.getElementById('fullscreen-chart');
+            if (fullscreenElement && fullscreenElement.data) {
+                Plotly.Plots.resize('fullscreen-chart');
+            }
+        }
+    });
+</script>
+
+<style>
+    .chart-container {
+        min-height: 400px;
+    }
+    .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Fullscreen modal enhancements */
+    #fullscreen-modal {
+        backdrop-filter: blur(5px);
+        transition: all 0.3s ease;
+    }
+    
+    .fullscreen-controls {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        display: flex;
+        gap: 10px;
+    }
+    
+    .fullscreen-controls button {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(5px);
+        border: none;
+        border-radius: 8px;
+        padding: 12px 20px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .fullscreen-controls button:hover {
+        background: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+    
+    .chart-info-overlay {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(5px);
+        padding: 12px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        z-index: 10000;
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+    }
+</style>
+{% endblock %}
